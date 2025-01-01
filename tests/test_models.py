@@ -117,7 +117,7 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found_product.description, product.description)
         self.assertEqual(found_product.price, product.price)
 
-   def test_update_a_product(self):
+    def test_update_a_product(self):
         """It should Update a Product"""
         product = ProductFactory()
         product.id = None
@@ -181,7 +181,6 @@ class TestProductModel(unittest.TestCase):
         for product in found:
             self.assertEqual(product.available, available)
 
-
     def test_find_by_category(self):
         """It should Find Products by Category"""
         products = ProductFactory.create_batch(10)
@@ -194,14 +193,13 @@ class TestProductModel(unittest.TestCase):
         for product in found:
             self.assertEqual(product.category, category)
 
-      def test_find_by_category(self):
-        """It should Find Products by Category"""
+    def test_find_by_price(self):
+        """It should return all Products with the given price"""
         products = ProductFactory.create_batch(10)
         for product in products:
             product.create()
-        category = products[0].category
-        count = len([product for product in products if product.category == category])
-        found = Product.find_by_category(category)
-        self.assertEqual(found.count(), count)
-        for product in found:
-            self.assertEqual(product.category, category)
+        first_product_price = products[0].price
+        count = len([product for product in products if product.price == first_product_price])
+        found_products = Product.find_by_price(first_product_price)
+        self.assertEqual(found_products.count(), count)
+
