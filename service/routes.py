@@ -22,6 +22,7 @@ from flask import jsonify, request, abort
 from flask import url_for  # noqa: F401 pylint: disable=unused-import
 from service.models import Product
 from service.common import status  # HTTP Status Codes
+from service.models import Product, Category
 from . import app
 
 
@@ -107,7 +108,7 @@ def get_products(product_id):
     return product.serialize(), status.HTTP_200_OK
 
 ######################################################################
-# U P D A T E   A   P R O D U C T
+# UPDATE AN EXISTING PRODUCT
 ######################################################################
 
 @app.route("/products/<int:product_id>", methods=["PUT"])
@@ -125,6 +126,24 @@ def update_products(product_id):
     product.id = product_id
     product.update()
     return product.serialize(), status.HTTP_200_OK
+
+######################################################################
+# DELETE A PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete_products(product_id):
+    """
+    Delete a Product
+
+    This endpoint will delete a Product based the id specified in the path
+    """
+    app.logger.info("Request to Delete a product with id [%s]", product_id)
+
+    product = Product.find(product_id)
+    if product:
+        product.delete()
+
+    return "", status.HTTP_204_NO_CONTENT
 
 ######################################################################
 # LIST PRODUCTS
@@ -159,20 +178,3 @@ def list_products():
     results = [product.serialize() for product in products]
     app.logger.info("[%s] Products returned", len(results))
     return results, status.HTTP_200_OK
-
-
-######################################################################
-# D E L E T E   A   P R O D U C T
-######################################################################
-
-@app.route("/products/<int:product_id>", methods=["DELETE"])
-def delete_products(product_id):
-    """
-    Delete a Product
-    This endpoint will delete a Product based the id specified in the path
-    """
-    app.logger.info("Request to Delete a product with id [%s]", product_id)
-    product = Product.find(product_id)
-    if product:
-        product.delete()
-    return "", status.HTTP_204_NO_CONTENT

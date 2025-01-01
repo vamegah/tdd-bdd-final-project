@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -101,9 +101,9 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(new_product.available, product.available)
         self.assertEqual(new_product.category, product.category)
 
-    #
+    
     # ADD YOUR TEST CASES HERE
-    #
+    
     def test_read_a_product(self):
         """It should Read a Product"""
         product = ProductFactory()
@@ -203,3 +203,57 @@ class TestProductModel(unittest.TestCase):
         found_products = Product.find_by_price(first_product_price)
         self.assertEqual(found_products.count(), count)
 
+    def test_update_a_product_not_saved(self):
+        """It should fail trying to Update a product not saved to the database"""
+        product = ProductFactory()
+        product.id = None
+        self.assertRaises(DataValidationError, product.update)
+
+    def test_invalid_data_structure(self): 
+        """It should fail when data is not a dictionary""" 
+        with self.assertRaises(DataValidationError) as context: 
+            Product().deserialize(None) 
+            self.assertIn("Invalid product: body of request contained bad or no data", str(context.exception))
+
+    def test_invalid_type_for_available(self): 
+        """It should fail when available field has an invalid type""" 
+        product = ProductFactory() 
+        data = { 
+            "name": product.name, 
+            "description": product.description, 
+            "price": str(product.price), 
+            "available": "yes", 
+            "category": product.category.name 
+            } 
+        with self.assertRaises(DataValidationError) as context: 
+            Product().deserialize(data) 
+            self.assertIn("Invalid type for boolean [available]", str(context.exception))
+
+
+    def test_invalid_category(self): 
+        """It should fail when category is invalid""" 
+        product = ProductFactory() 
+        data = { 
+            "name": product.name, 
+            "description": product.description, 
+            "price": str(product.price), 
+            "available": product.available, 
+            "category": "NonExistentCategory" 
+            }
+        with self.assertRaises(DataValidationError) as context: 
+            Product().deserialize(data) 
+            self.assertIn("Invalid attribute", str(context.exception))
+
+    def test_find_by_price_string(self): 
+        """It should return products with the given price as String""" 
+        products = ProductFactory.create_batch(10, price=Decimal("29.99")) 
+        for product in products: 
+            product.create() 
+        found_products = Product.find_by_price("29.99") 
+        self.assertEqual(found_products.count(), 10)
+
+    def test_find_by_price_no_products(self): 
+        """It should return an empty list if no products found""" 
+        ProductFactory.create_batch(10, price=Decimal("39.99")).clear() 
+        found_products = Product.find_by_price("39.99") 
+        self.assertEqual(found_products.count(), 0)
